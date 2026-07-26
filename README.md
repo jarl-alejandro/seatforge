@@ -84,6 +84,17 @@ Configura en sus variables los Client ID/Secret M2M de Auth0; la colección obti
 y conserva temporalmente los tokens de organizador y comprador, y encadena los
 identificadores creados entre las peticiones.
 
+Para ejecutar desde IntelliJ usa la configuración compartida
+`SeatForgeApplication (.env)`. Esta configuración carga `.env` como única fuente
+local de `AUTH0_ISSUER` y `AUTH0_AUDIENCE`; evita definir nuevamente esas
+variables en la configuración temporal porque los valores explícitos tienen
+precedencia sobre el archivo.
+
+La autorización Auth0 usa los permisos RBAC del claim OAuth estándar `scope`
+(texto separado por espacios). SeatForge también acepta el claim `permissions`
+cuando está habilitado en Auth0. Un token con scopes de comprador y organizador
+expone ambos roles, pero cada ruta continúa exigiendo su permiso concreto.
+
 La integración continua ejecuta la misma suite mediante
 [GitHub Actions](.github/workflows/ci.yml). Una regla ArchUnit rota debe hacer
 fallar el mismo job que las demás pruebas; no existe una vía de construcción que

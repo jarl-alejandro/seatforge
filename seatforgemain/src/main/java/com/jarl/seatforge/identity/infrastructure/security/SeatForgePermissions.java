@@ -23,6 +23,15 @@ final class SeatForgePermissions {
 
     static final Set<String> ORGANIZER = Set.of(CREATE_EVENTS, PUBLISH_EVENTS);
 
+    static final Set<String> ALL = Set.of(
+            CREATE_EVENTS,
+            PUBLISH_EVENTS,
+            RESERVE_TICKETS,
+            CREATE_ORDERS,
+            READ_ORDERS,
+            PAY_ORDERS
+    );
+
     private SeatForgePermissions() {
     }
 }

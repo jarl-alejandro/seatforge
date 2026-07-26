@@ -15,7 +15,7 @@ final class Auth0JwtAuthenticationConverter implements Converter<Jwt, AbstractAu
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
-        Set<String> permissions = permissions(jwt.getClaim("permissions"));
+        Set<String> permissions = permissions(jwt);
         Set<GrantedAuthority> authorities = new LinkedHashSet<>();
         permissions.stream().map(SimpleGrantedAuthority::new).forEach(authorities::add);
 
@@ -29,17 +29,29 @@ final class Auth0JwtAuthenticationConverter implements Converter<Jwt, AbstractAu
         return new JwtAuthenticationToken(jwt, authorities, jwt.getSubject());
     }
 
-    private Set<String> permissions(Object claim) {
-        if (!(claim instanceof Collection<?> values)) {
-            return Set.of();
+    private Set<String> permissions(Jwt jwt) {
+        Set<String> permissions = new LinkedHashSet<>();
+        Object permissionsClaim = jwt.getClaim("permissions");
+        if (permissionsClaim instanceof Collection<?> values) {
+            for (Object value : values) {
+                if (value instanceof String permission) {
+                    addKnownPermission(permissions, permission);
+                }
+            }
         }
 
-        Set<String> permissions = new LinkedHashSet<>();
-        for (Object value : values) {
-            if (value instanceof String permission && !permission.isBlank()) {
-                permissions.add(permission);
+        Object scopeClaim = jwt.getClaim("scope");
+        if (scopeClaim instanceof String scope) {
+            for (String permission : scope.trim().split("\\s+")) {
+                addKnownPermission(permissions, permission);
             }
         }
         return Set.copyOf(permissions);
+    }
+
+    private void addKnownPermission(Set<String> permissions, String permission) {
+        if (SeatForgePermissions.ALL.contains(permission)) {
+            permissions.add(permission);
+        }
     }
 }

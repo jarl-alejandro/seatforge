@@ -11,18 +11,18 @@ set -euo pipefail
 AUTH0_ISSUER="${AUTH0_ISSUER:-https://dev-b2bnjwq3sll2xfxh.us.auth0.com/}"
 AUTH0_AUDIENCE="${AUTH0_AUDIENCE:-https://api.seatforge.local}"
 
-AUTH0_TOKEN_URL="${https://dev-b2bnjwq3sll2xfxh.us.auth0.com}/oauth/token"
+AUTH0_TOKEN_URL="${AUTH0_ISSUER%/}/oauth/token"
 
 echo "Solicitando token de ORGANIZER..."
 curl --fail-with-body --silent --show-error \
   --request POST \
-  --url "https://dev-b2bnjwq3sll2xfxh.us.auth0.com/oauth/token" \
+  --url "${AUTH0_TOKEN_URL}" \
   --header "content-type: application/x-www-form-urlencoded" \
   --data-urlencode "client_id=${AUTH0_ORGANIZER_CLIENT_ID}" \
   --data-urlencode "client_secret=${AUTH0_ORGANIZER_CLIENT_SECRET}" \
-  --data-urlencode "audience=https://api.seatforge.local" \
+  --data-urlencode "audience=${AUTH0_AUDIENCE}" \
   --data-urlencode "grant_type=client_credentials" \
-  --data-urlencode "scope=create:events publish:events reserve:tickets create:orders read:orders pay:orders"
+  --data-urlencode "scope=create:events publish:events"
 
 printf '\n\n'
 
@@ -33,7 +33,7 @@ curl --fail-with-body --silent --show-error \
   --header "content-type: application/x-www-form-urlencoded" \
   --data-urlencode "client_id=${AUTH0_BUYER_CLIENT_ID}" \
   --data-urlencode "client_secret=${AUTH0_BUYER_CLIENT_SECRET}" \
-    --data-urlencode "audience=${AUTH0_AUDIENCE}" \
+  --data-urlencode "audience=${AUTH0_AUDIENCE}" \
   --data-urlencode "grant_type=client_credentials" \
   --data-urlencode "scope=reserve:tickets create:orders read:orders pay:orders"
 

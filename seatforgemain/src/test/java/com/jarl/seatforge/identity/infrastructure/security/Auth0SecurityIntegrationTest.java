@@ -141,6 +141,18 @@ class Auth0SecurityIntegrationTest {
     }
 
     @Test
+    void rbac_scope_claim_grants_authority_without_permissions_claim() throws Exception {
+        String token = tokenWithScopeOnly(
+                jwtEncoder, ORGANIZER_SUBJECT, "create:events publish:events");
+
+        mvc.perform(post("/api/v1/events")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.actorId").value(ORGANIZER_SUBJECT))
+                .andExpect(jsonPath("$.role").value("ORGANIZER"));
+    }
+
+    @Test
     void malformed_expired_wrong_issuer_and_wrong_audience_tokens_return_401() throws Exception {
         assertUnauthorized("not-a-jwt");
         assertUnauthorized(token(jwtEncoder, ISSUER, AUDIENCE, BUYER_SUBJECT,
@@ -176,13 +188,13 @@ class Auth0SecurityIntegrationTest {
     }
 
     @Test
-    void actor_with_buyer_and_organizer_permissions_is_rejected_as_ambiguous() throws Exception {
-        String token = token(jwtEncoder, ISSUER, AUDIENCE, ORGANIZER_SUBJECT,
-                Set.of("create:events", "reserve:tickets"), Instant.now().plusSeconds(300));
+    void actor_with_buyer_and_organizer_scopes_can_expose_both_roles() throws Exception {
+        String token = tokenWithScopeOnly(jwtEncoder, ORGANIZER_SUBJECT,
+                "create:events publish:events reserve:tickets create:orders read:orders pay:orders");
 
         mvc.perform(post("/api/v1/events").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("BUYER+ORGANIZER"));
     }
 
     @Test
@@ -235,6 +247,20 @@ class Auth0SecurityIntegrationTest {
                 .claim("permissions", permissions)
                 .build();
         JwsHeader header = JwsHeader.with(algorithm).type("JWT").build();
+        return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+    }
+
+    private static String tokenWithScopeOnly(JwtEncoder encoder, String subject, String scope) {
+        Instant expiresAt = Instant.now().plusSeconds(300);
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer(ISSUER)
+                .subject(subject)
+                .audience(List.of(AUDIENCE))
+                .issuedAt(expiresAt.minusSeconds(300))
+                .expiresAt(expiresAt)
+                .claim("scope", scope)
+                .build();
+        JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256).type("JWT").build();
         return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
     }
 
@@ -310,7 +336,11 @@ class Auth0SecurityIntegrationTest {
 
         private Map<String, String> actorResponse() {
             AuthenticatedActor actor = currentActor.get();
-            return Map.of("actorId", actor.id().value(), "role", actor.role().name());
+            String roles = actor.roles().stream()
+                    .map(Enum::name)
+                    .sorted()
+                    .collect(java.util.stream.Collectors.joining("+"));
+            return Map.of("actorId", actor.id().value(), "role", roles);
         }
     }
 }

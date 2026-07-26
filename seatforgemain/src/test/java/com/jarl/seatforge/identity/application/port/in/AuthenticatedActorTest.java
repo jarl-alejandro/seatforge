@@ -14,12 +14,12 @@ class AuthenticatedActorTest {
         ActorId actorId = new ActorId("organizer-client@clients");
         AuthenticatedActor actor = new AuthenticatedActor(
                 actorId,
-                ActorRole.ORGANIZER,
+                Set.of(ActorRole.ORGANIZER),
                 Set.of("create:events", "publish:events")
         );
 
         assertThat(actor.id()).isEqualTo(actorId);
-        assertThat(actor.role()).isEqualTo(ActorRole.ORGANIZER);
+        assertThat(actor.roles()).containsExactly(ActorRole.ORGANIZER);
         assertThat(actor.hasPermission("publish:events")).isTrue();
         assertThat(actor.owns(new ActorId("organizer-client@clients"))).isTrue();
         assertThat(actor.owns(new ActorId("another-organizer@clients"))).isFalse();

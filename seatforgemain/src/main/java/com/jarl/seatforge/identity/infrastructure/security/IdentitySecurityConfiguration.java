@@ -1,6 +1,9 @@
 package com.jarl.seatforge.identity.infrastructure.security;
 
 import jakarta.servlet.DispatcherType;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,11 +12,14 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class IdentitySecurityConfiguration {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(IdentitySecurityConfiguration.class);
 
     @Bean
     SecurityFilterChain seatForgeSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -45,19 +51,27 @@ public class IdentitySecurityConfiguration {
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) ->
-                                SecurityProblemWriter.unauthorized(response))
+                                unauthorized(response, exception))
                         .accessDeniedHandler((request, response, exception) ->
                                 SecurityProblemWriter.forbidden(response))
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter))
                         .authenticationEntryPoint((request, response, exception) ->
-                                SecurityProblemWriter.unauthorized(response))
+                                unauthorized(response, exception))
                         .accessDeniedHandler((request, response, exception) ->
                                 SecurityProblemWriter.forbidden(response))
                 );
 
         return http.build();
+    }
+
+    private static void unauthorized(
+            HttpServletResponse response,
+            AuthenticationException exception
+    ) throws java.io.IOException {
+        LOGGER.warn("Bearer authentication failed: {}", exception.getMessage());
+        SecurityProblemWriter.unauthorized(response);
     }
 
 }

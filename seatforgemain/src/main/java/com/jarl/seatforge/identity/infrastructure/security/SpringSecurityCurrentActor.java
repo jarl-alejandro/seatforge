@@ -27,20 +27,24 @@ public final class SpringSecurityCurrentActor implements CurrentActor {
 
         return new AuthenticatedActor(
                 new ActorId(authentication.getName()),
-                role(authorities),
+                roles(authorities),
                 authorities.stream()
                         .filter(authority -> !authority.startsWith("ROLE_"))
                         .collect(Collectors.toUnmodifiableSet())
         );
     }
 
-    private ActorRole role(Set<String> authorities) {
-        boolean buyer = authorities.contains(SeatForgePermissions.ROLE_BUYER);
-        boolean organizer = authorities.contains(SeatForgePermissions.ROLE_ORGANIZER);
-
-        if (buyer == organizer) {
+    private Set<ActorRole> roles(Set<String> authorities) {
+        Set<ActorRole> roles = new java.util.LinkedHashSet<>();
+        if (authorities.contains(SeatForgePermissions.ROLE_BUYER)) {
+            roles.add(ActorRole.BUYER);
+        }
+        if (authorities.contains(SeatForgePermissions.ROLE_ORGANIZER)) {
+            roles.add(ActorRole.ORGANIZER);
+        }
+        if (roles.isEmpty()) {
             throw new ActorIdentityUnavailableException();
         }
-        return buyer ? ActorRole.BUYER : ActorRole.ORGANIZER;
+        return Set.copyOf(roles);
     }
 }

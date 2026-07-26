@@ -274,7 +274,9 @@ components:
       bearerFormat: JWT
       description: |
         Access token RS256 emitido por Auth0 para la audiencia de SeatForge.
-        `sub` identifica al actor técnico y `permissions` contiene sus permisos.
+        `sub` identifica al actor técnico y `scope` contiene los permisos RBAC
+        efectivos separados por espacios. Por compatibilidad también se acepta
+        el claim opcional `permissions` de Auth0.
 
   parameters:
     EventId:

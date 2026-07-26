@@ -17,11 +17,15 @@ propiedad sin construir registro, login ni gestión de usuarios.
   - `seatforge-organizer-lab`;
   - `seatforge-buyer-lab`.
 - El claim `sub` del token se propaga como identificador estable del actor.
-- Auth0 tiene RBAC habilitado y añade al access token los permisos concedidos:
+- Auth0 tiene RBAC habilitado y expone en el claim estándar `scope` los permisos
+  efectivos concedidos (separados por espacios):
   - organizador: `create:events`, `publish:events`;
   - comprador: `reserve:tickets`, `create:orders`, `read:orders`, `pay:orders`.
-- El adaptador de seguridad traduce `sub` y permisos a una identidad interna
-  con rol `ORGANIZER` o `BUYER`. Los casos de uso y el dominio no conocen JWT,
+- El adaptador de seguridad traduce `sub` y scopes a una identidad interna
+  con uno o más roles `ORGANIZER`/`BUYER`. Un cliente con scopes de ambos grupos
+  conserva ambos roles y cada endpoint sigue protegido por su scope específico.
+  Por compatibilidad se acepta también el claim opcional `permissions` de Auth0.
+  Los casos de uso y el dominio no conocen JWT,
   Auth0 ni Spring Security.
 - No hay usuarios humanos, registro, pantalla de login, refresh tokens,
   perfiles ni rol `ADMIN`.

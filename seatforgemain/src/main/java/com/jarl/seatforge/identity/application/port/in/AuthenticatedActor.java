@@ -3,11 +3,14 @@ package com.jarl.seatforge.identity.application.port.in;
 import java.util.Objects;
 import java.util.Set;
 
-public record AuthenticatedActor(ActorId id, ActorRole role, Set<String> permissions) {
+public record AuthenticatedActor(ActorId id, Set<ActorRole> roles, Set<String> permissions) {
 
     public AuthenticatedActor {
         Objects.requireNonNull(id, "id must not be null");
-        Objects.requireNonNull(role, "role must not be null");
+        roles = Set.copyOf(Objects.requireNonNull(roles, "roles must not be null"));
+        if (roles.isEmpty()) {
+            throw new IllegalArgumentException("roles must not be empty");
+        }
         permissions = Set.copyOf(Objects.requireNonNull(permissions, "permissions must not be null"));
     }
 
@@ -23,5 +26,9 @@ public record AuthenticatedActor(ActorId id, ActorRole role, Set<String> permiss
 
     public boolean hasPermission(String permission) {
         return permissions.contains(permission);
+    }
+
+    public boolean hasRole(ActorRole role) {
+        return roles.contains(role);
     }
 }

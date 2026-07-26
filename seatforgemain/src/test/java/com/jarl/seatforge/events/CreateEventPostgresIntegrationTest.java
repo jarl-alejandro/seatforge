@@ -108,7 +108,7 @@ class CreateEventPostgresIntegrationTest {
         @Primary
         CurrentActor testCurrentActor() {
             return () -> new AuthenticatedActor(
-                    new ActorId("organizer@clients"), ActorRole.ORGANIZER, Set.of("create:events"));
+                    new ActorId("organizer@clients"), Set.of(ActorRole.ORGANIZER), Set.of("create:events"));
         }
 
         @Bean
