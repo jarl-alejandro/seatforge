@@ -1,37 +1,30 @@
 # US-009 — Liberar reservas expiradas
 
-**Módulo:** Inventory · **Prioridad:** P0
+**Módulo:** Inventory · **Estado:** NÚCLEO TÉCNICO
 
-## Historia
+## Objetivo
 
-Como plataforma, quiero liberar reservas que superaron su tiempo límite, para recuperar inventario sin vender y evitar bloqueos indefinidos.
+Como plataforma, quiero liberar reservas vencidas en lotes pequeños, para
+recuperar inventario y estudiar carreras con la confirmación.
 
-## Reglas
+## Alcance
 
-- Transición válida: `RESERVED → AVAILABLE` por expiración.
-- Una entrada `SOLD` nunca se libera.
-- El proceso es reentrante e idempotente.
-- La decisión usa tiempo del servidor inyectable para pruebas.
+- Job interno periódico; no expone endpoint de negocio.
+- `RESERVED → AVAILABLE` solo cuando `expiresAt <= now`.
+- Lotes configurables, reentrantes e idempotentes; reloj inyectable.
 
 ## Criterios de aceptación
 
-1. Dada una reserva expirada, cuando corre el liberador, entonces queda disponible y se limpian sus datos de reserva.
-2. Dada una reserva vigente, entonces no cambia.
-3. Dada una confirmación concurrente, entonces la entrada termina `SOLD` o `AVAILABLE` según una única transición válida, nunca en un estado corrupto.
-4. Dado un reinicio durante el lote, entonces la siguiente ejecución continúa de forma segura.
-5. Cada ejecución registra revisadas, liberadas, conflictos, duración y errores.
+1. Libera solo reservas expiradas y nunca una entrada `SOLD`.
+2. Un reinicio permite reejecutar sin doble efecto.
+3. Una carrera expiración/confirmación termina en `AVAILABLE` o `SOLD`, nunca en
+   un estado intermedio ni en orden confirmada con entrada disponible.
+4. Registra duración, candidatas, liberadas y conflictos.
 
-## Casos de prueba
+## Pruebas mínimas
 
-| ID | Tipo | Escenario | Resultado esperado |
-|---|---|---|---|
-| T01 | U | Reloj posterior a expiración | Se libera |
-| T02 | U | Reserva aún vigente | No cambia |
-| T03 | I | Lote mixto | Solo expiran las elegibles |
-| T04 | C | Expirar mientras se confirma | Una transición ganadora válida |
-| T05 | F | Fallo y reejecución | Sin doble efecto |
+- Unidad con reloj fijo, integración por lote y prueba concurrente con confirmación.
 
 ## Dependencias
 
 US-008.
-

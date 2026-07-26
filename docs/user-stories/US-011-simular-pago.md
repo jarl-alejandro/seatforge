@@ -1,37 +1,36 @@
-# US-011 — Procesar un pago simulado
+# US-011 — Simular pago y completar compra
 
-**Módulo:** Payments · **Prioridad:** P0
+**Módulos:** Payments, Orders, Inventory · **Estado:** NÚCLEO
 
-## Historia
+## Objetivo
 
-Como comprador, quiero procesar un pago simulado de mi orden, para completar el flujo y estudiar latencia, timeouts, reintentos y resultados ambiguos sin usar tarjetas reales.
+Como comprador, quiero simular el pago de mi orden, para completar el flujo y
+provocar aprobación, rechazo o timeout de forma reproducible.
 
-## Reglas
+## Alcance
 
-- Resultados configurables: aprobado, rechazado, timeout y error.
-- Nunca se reciben ni persisten datos reales de tarjeta.
-- Cada solicitud exige idempotencia y guarda hash de request, resultado y estado.
-- “Resultado desconocido” es distinto de “rechazado”.
+- El request elige `APPROVED`, `DECLINED` o `TIMEOUT`; esto es una API de
+  laboratorio, no un proveedor real.
+- `Idempotency-Key` es obligatorio. No existen tarjetas ni datos bancarios.
+- `APPROVED` cambia pago a aprobado, orden a `CONFIRMED` y entrada a `SOLD` en
+  una transacción local.
+- `DECLINED` deja orden `DECLINED` y libera la entrada.
+- `TIMEOUT` responde `504` sin mutar estados; no se modela reconciliación aún.
 
 ## Criterios de aceptación
 
-1. Dada una orden pendiente, cuando el simulador aprueba, entonces registra un único pago aprobado.
-2. Cuando rechaza, la orden puede iniciar compensación y no se confirma inventario.
-3. Dada una respuesta perdida tras procesar, cuando se reintenta con la misma clave, entonces se devuelve el resultado original sin doble cobro.
-4. Dada la misma clave con importe distinto, entonces se rechaza.
-5. La latencia y tasa de fallos son configurables en entorno de prueba y visibles en métricas.
+1. Aprobación confirma exactamente una orden y una entrada.
+2. Rechazo libera la entrada y no puede terminar como venta.
+3. Timeout artificial es configurable y observable.
+4. Un reintento con misma clave no duplica efectos; otra solicitud para una orden
+   terminal devuelve su resultado terminal.
+5. Un fallo entre cambios revierte la transacción completa.
 
-## Casos de prueba
+## Pruebas mínimas
 
-| ID | Tipo | Escenario | Resultado esperado |
-|---|---|---|---|
-| T01 | U | Aprobar pago | Resultado persistible |
-| T02 | I | Reintento tras respuesta perdida | Un cargo lógico |
-| T03 | F/I | Timeout antes de conocer resultado | Estado `UNKNOWN` o equivalente |
-| T04 | C | Callbacks/reintentos simultáneos | Un resultado terminal |
-| T05 | O | Latencia artificial de 5 s | Traza identifica el tiempo |
+- Integración por escenario, rollback e idempotencia.
+- Concurrencia: veinte pagos iguales generan un solo efecto terminal.
 
 ## Dependencias
 
-US-010.
-
+US-009, US-010.

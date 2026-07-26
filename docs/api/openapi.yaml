@@ -1,0 +1,560 @@
+openapi: 3.1.0
+info:
+  title: SeatForge Laboratory API
+  version: 0.1.0
+  summary: Contrato REST mínimo para experimentar con concurrencia y carga.
+  description: |
+    API educativa del monolito SeatForge. No representa un producto comercial.
+    Los pagos y las identidades son simulados deliberadamente.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Entorno local
+tags:
+  - name: Events
+  - name: Inventory
+  - name: Orders
+  - name: Payments
+
+paths:
+  /events:
+    get:
+      tags: [Events]
+      operationId: listPublishedEvents
+      summary: Lista eventos publicados y futuros.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página ordenada por `startsAt,eventId`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [Events]
+      operationId: createEvent
+      summary: Crea un evento borrador y su inventario en una transacción.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Evento e inventario creados.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventId}:
+    get:
+      tags: [Events]
+      operationId: getPublishedEvent
+      summary: Obtiene el detalle público de un evento.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '200':
+          description: Evento publicado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventId}/publish:
+    post:
+      tags: [Events]
+      operationId: publishEvent
+      summary: Publica un evento propio; la operación es idempotente.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '200':
+          description: Estado actual del evento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /events/{eventId}/tickets:
+    get:
+      tags: [Inventory]
+      operationId: listEventTickets
+      summary: Lista las entradas de un evento publicado.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página ordenada por número de entrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tickets/{ticketId}/reservations:
+    post:
+      tags: [Inventory]
+      operationId: reserveTicket
+      summary: Reserva temporalmente una entrada disponible.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Reserva creada o resultado original del mismo comando.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /orders:
+    post:
+      tags: [Orders]
+      operationId: createOrder
+      summary: Crea una orden desde una reserva vigente propia.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Orden creada o resultado original del mismo comando.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /orders/{orderId}:
+    get:
+      tags: [Orders]
+      operationId: getOrder
+      summary: Consulta una orden propia.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: Orden encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /orders/{orderId}/payments:
+    post:
+      tags: [Payments]
+      operationId: simulatePayment
+      summary: Simula un pago y aplica su resultado terminal.
+      description: |
+        `APPROVED` confirma orden y entrada atómicamente. `DECLINED` rechaza la
+        orden y libera la entrada. `TIMEOUT` no cambia estados y responde 504.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulatePaymentRequest'
+      responses:
+        '200':
+          description: Resultado terminal aplicado o recuperado por idempotencia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '504':
+          description: Timeout simulado; no se modificó el estado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Token opaco local asociado a un usuario de laboratorio.
+
+  parameters:
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    TicketId:
+      name: ticketId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: UUID nuevo por comando lógico; un reintento reutiliza la clave.
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Token ausente o inválido.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: El actor no tiene rol o propiedad suficiente.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Recurso inexistente o no visible.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: Conflicto de estado, concurrencia o idempotencia.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    Money:
+      type: object
+      additionalProperties: false
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: decimal
+          exclusiveMinimum: 0
+          multipleOf: 0.01
+          examples: [25.00]
+        currency:
+          type: string
+          const: USD
+    CreateEventRequest:
+      type: object
+      additionalProperties: false
+      required: [name, startsAt, price, capacity]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        startsAt:
+          type: string
+          format: date-time
+          description: Instante futuro en UTC.
+        price:
+          $ref: '#/components/schemas/Money'
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 100000
+    Event:
+      type: object
+      additionalProperties: false
+      required: [eventId, name, startsAt, price, capacity, status]
+      properties:
+        eventId:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        price:
+          $ref: '#/components/schemas/Money'
+        capacity:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED]
+    EventPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Event'
+    Ticket:
+      type: object
+      additionalProperties: false
+      required: [ticketId, eventId, number, status, price]
+      properties:
+        ticketId:
+          $ref: '#/components/schemas/Uuid'
+        eventId:
+          $ref: '#/components/schemas/Uuid'
+        number:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [AVAILABLE, RESERVED, SOLD]
+        price:
+          $ref: '#/components/schemas/Money'
+    TicketPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Ticket'
+    Reservation:
+      type: object
+      additionalProperties: false
+      required: [reservationId, ticketId, status, expiresAt]
+      properties:
+        reservationId:
+          $ref: '#/components/schemas/Uuid'
+        ticketId:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          type: string
+          const: ACTIVE
+        expiresAt:
+          type: string
+          format: date-time
+    CreateOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [reservationId]
+      properties:
+        reservationId:
+          $ref: '#/components/schemas/Uuid'
+    Order:
+      type: object
+      additionalProperties: false
+      required: [orderId, reservationId, ticketId, total, status, createdAt]
+      properties:
+        orderId:
+          $ref: '#/components/schemas/Uuid'
+        reservationId:
+          $ref: '#/components/schemas/Uuid'
+        ticketId:
+          $ref: '#/components/schemas/Uuid'
+        total:
+          $ref: '#/components/schemas/Money'
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, DECLINED]
+        createdAt:
+          type: string
+          format: date-time
+    SimulatePaymentRequest:
+      type: object
+      additionalProperties: false
+      required: [scenario]
+      properties:
+        scenario:
+          type: string
+          enum: [APPROVED, DECLINED, TIMEOUT]
+        delayMs:
+          type: integer
+          minimum: 0
+          maximum: 30000
+          default: 0
+          description: Latencia artificial para pruebas.
+    PaymentResult:
+      type: object
+      additionalProperties: false
+      required: [paymentId, orderId, result, orderStatus, ticketStatus, processedAt]
+      properties:
+        paymentId:
+          $ref: '#/components/schemas/Uuid'
+        orderId:
+          $ref: '#/components/schemas/Uuid'
+        result:
+          type: string
+          enum: [APPROVED, DECLINED]
+        orderStatus:
+          type: string
+          enum: [CONFIRMED, DECLINED]
+        ticketStatus:
+          type: string
+          enum: [AVAILABLE, SOLD]
+        processedAt:
+          type: string
+          format: date-time
+    PageMetadata:
+      type: object
+      required: [page, size, totalElements, totalPages]
+      properties:
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+    Problem:
+      type: object
+      additionalProperties: true
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        code:
+          type: string
+          description: Código estable legible por clientes.
+        traceId:
+          type: string
+          description: Identificador de correlación; no contiene datos sensibles.

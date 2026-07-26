@@ -1,37 +1,32 @@
-# US-003 — Crear un evento
+# US-003 — Crear un evento vendible
 
-**Módulo:** Events · **Prioridad:** P0
+**Módulos:** Events, Inventory · **Estado:** NÚCLEO
 
-## Historia
+## Objetivo
 
-Como organizador, quiero crear un evento en estado borrador, para preparar su venta sin hacerlo visible prematuramente.
+Como organizador, quiero crear un evento borrador con su precio y aforo, para
+obtener en una sola operación el dataset mínimo que después será sometido a carga.
 
-## Reglas
+## Alcance
 
-- Un evento nace en `DRAFT`.
-- Requiere nombre, recinto, zona horaria, fecha futura y propietario.
-- El dinero se representa con importe y moneda; las fechas se almacenan como instantes UTC.
-- El identificador se genera una sola vez y no se reutiliza.
+- Entrada: `name`, `startsAt`, `price` y `capacity`.
+- Moneda única de laboratorio: `USD`.
+- El evento nace `DRAFT`; se generan entradas numeradas `1..capacity` en estado
+  `AVAILABLE` dentro de la misma transacción.
+- No hay recinto, zona horaria, zonas, mapas, importación ni edición.
 
 ## Criterios de aceptación
 
-1. Dado un organizador autenticado y datos válidos, cuando crea un evento, entonces se persiste en `DRAFT` y se devuelve su identificador.
-2. Dada una fecha no futura, cuando se intenta crear, entonces se rechaza con error de dominio.
-3. Dados campos obligatorios vacíos, cuando se envía la solicitud, entonces no se persiste nada.
-4. Dado un fallo de persistencia, cuando termina la solicitud, entonces no queda un agregado parcial.
-5. Dado un evento creado, entonces se emiten métricas y auditoría con `eventId` y `organizerId`.
+1. Datos válidos crean un evento propio y exactamente `capacity` entradas.
+2. Fecha no futura, precio no positivo o capacidad fuera de `1..100000` se rechaza.
+3. Un fallo durante la escritura revierte evento e inventario completos.
+4. La respuesta devuelve `eventId`, estado y cantidad creada.
 
-## Casos de prueba
+## Pruebas mínimas
 
-| ID | Tipo | Escenario | Resultado esperado |
-|---|---|---|---|
-| T01 | U | Crear con valores válidos | Evento `DRAFT` |
-| T02 | U | Fecha pasada | Excepción de dominio |
-| T03 | U | Nombre vacío | Validación fallida |
-| T04 | I | Persistir y recuperar | Conserva invariantes y zona horaria |
-| T05 | I | Error de base de datos | Transacción revertida |
+- Unidad: invariantes de fecha, precio y capacidad.
+- Integración: conteo/unicidad y rollback transaccional.
 
 ## Dependencias
 
 US-001, US-002.
-

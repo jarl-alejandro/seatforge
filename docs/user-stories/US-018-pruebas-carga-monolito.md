@@ -1,49 +1,31 @@
-# US-018 — Ejecutar perfiles de carga reproducibles
+# US-018 — Medir carga del monolito
 
-**Tipo:** habilitador de rendimiento · **Prioridad:** P1
+**Estado:** NÚCLEO EXPERIMENTAL
 
-## Historia
+## Objetivo
 
-Como ingeniero de rendimiento, quiero ejecutar perfiles de carga reproducibles sobre el monolito, para descubrir su punto de degradación y relacionarlo con CPU, memoria, GC, base de datos y contención.
+Como ingeniero de rendimiento, quiero aumentar carga desde un baseline pequeño,
+para localizar saturación y distinguirla de errores funcionales.
 
 ## Perfiles
 
-1. Estable: 100 usuarios durante 20 minutos.
-2. Gradual: 100 → 500 → 1.000 → 5.000.
-3. Spike: 100 → 10.000 en 10 segundos.
-4. Soak: 500 usuarios durante 4 horas.
+1. **Smoke CI:** 1–5 usuarios, menos de un minuto.
+2. **Baseline:** 10 usuarios durante 5 minutos.
+3. **Escalones:** duplicar usuarios (`10, 20, 40...`) hasta incumplir el umbral.
+4. **Contención:** 1, 10 y 100 compradores sobre una entrada.
 
-Los perfiles largos pueden ejecutarse fuera de la CI de cada commit; debe existir un smoke profile corto.
+Spike y soak largos se diseñan después de conocer el baseline; no se fijan ahora
+cifras arbitrarias de 5.000 o 10.000 usuarios.
 
 ## Criterios de aceptación
 
-1. Cada perfil define dataset, warm-up, ramp-up, duración, assertions y ambiente.
-2. Se registran throughput, error rate, p50/p90/p95/p99, CPU, memoria, GC, conexiones y conflictos.
-3. El informe diferencia saturación, degradación y fallo funcional.
-4. Una prueba por encima del inventario no genera sobreventa.
-5. Los resultados incluyen commit, configuración, versión de herramientas y fecha.
-6. Los umbrales iniciales se consideran baseline revisable, no promesa de producción.
-
-## Casos de prueba
-
-| ID | Tipo | Escenario | Resultado esperado |
-|---|---|---|---|
-| T01 | P | Smoke en CI | Script y endpoints válidos |
-| T02 | P | Carga estable | Baseline sin crecimiento anómalo |
-| T03 | P | Incremento gradual | Punto de degradación identificado |
-| T04 | C/P | Spike de apertura | 0 sobreventa; conflictos medidos |
-| T05 | P | Soak | Fugas o estabilidad documentadas |
-| T06 | F/P | Pool pequeño/saturado | Causa visible en métricas |
-
-## Entregables
-
-- Simulaciones Gatling versionadas.
-- Dataset o generador determinista.
-- Plantilla de informe de resultados.
-- Dashboard o exportación de métricas correlacionada.
-- Lista de experimentos posteriores: índices, paginación, N+1 y ajuste de HikariCP.
+1. Cada ejecución registra commit, entorno, dataset, warm-up y configuración.
+2. Captura TPS, errores, p50/p95/p99, CPU, memoria, GC, pool y conflictos.
+3. La prueba se detiene ante errores funcionales u `oversold_tickets_total > 0`.
+4. El informe identifica el primer recurso saturado y propone un siguiente
+   experimento, no una optimización por intuición.
+5. Script, generador de datos y resultados crudos quedan versionados o enlazados.
 
 ## Dependencias
 
-US-008, US-012, US-016, US-017.
-
+US-008, US-011, US-016, US-017.

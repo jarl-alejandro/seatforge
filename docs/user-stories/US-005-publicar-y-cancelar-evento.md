@@ -1,37 +1,30 @@
-# US-005 — Publicar y cancelar un evento
+# US-005 — Publicar un evento
 
-**Módulo:** Events · **Prioridad:** P0
+**Módulo:** Events · **Estado:** NÚCLEO
 
-## Historia
+## Objetivo
 
-Como organizador, quiero publicar un evento listo o cancelarlo, para controlar su disponibilidad comercial.
+Como organizador, quiero publicar mi evento borrador, para habilitar consultas y
+reservas.
 
-## Reglas
+## Alcance
 
-- Solo se publica un `DRAFT` futuro con aforo e inventario consistentes y al menos un precio.
-- Publicar dos veces es idempotente.
-- Un evento cancelado no acepta nuevas reservas.
-- La cancelación no borra órdenes ni auditoría.
+- Única transición: `DRAFT → PUBLISHED`.
+- Publicar repetidamente devuelve el mismo estado sin duplicar efectos.
+- No se implementa cancelación de eventos en esta etapa.
 
 ## Criterios de aceptación
 
-1. Dado un borrador completo, cuando se publica, entonces cambia a `PUBLISHED` y aparece en catálogo.
-2. Dado un borrador incompleto, cuando se publica, entonces permanece `DRAFT` y se informan las invariantes incumplidas.
-3. Dado un evento publicado, cuando se cancela, entonces cambia a `CANCELLED` y rechaza nuevas reservas.
-4. Dada la misma orden de publicación repetida, entonces el estado y efectos no se duplican.
-5. Dado un usuario que no es propietario ni administrador, entonces no puede cambiar el estado.
+1. El propietario puede publicar un evento futuro con inventario disponible.
+2. Un evento publicado aparece en catálogo y acepta reservas.
+3. Otro usuario recibe `403`; un evento inexistente devuelve `404`.
+4. Dos publicaciones concurrentes dejan un solo estado final válido.
 
-## Casos de prueba
+## Pruebas mínimas
 
-| ID | Tipo | Escenario | Resultado esperado |
-|---|---|---|---|
-| T01 | U | Publicar evento completo | Transición válida |
-| T02 | U | Publicar sin inventario | Transición rechazada |
-| T03 | I | Publicar y consultar catálogo | Evento visible |
-| T04 | I | Cancelar y reservar | Reserva rechazada |
-| T05 | C | Dos publicaciones simultáneas | Un único cambio efectivo |
+- Unidad: transición válida e idempotente.
+- Integración/concurrencia: propiedad y dos publicaciones simultáneas.
 
 ## Dependencias
 
-US-004, US-007.
-
+US-003.
