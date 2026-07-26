@@ -7,7 +7,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.NONE,
+        properties = {
+                "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://seatforge-test.auth0.com/",
+                "spring.security.oauth2.resourceserver.jwt.audiences=https://api.seatforge.local"
+        }
+)
 class SeatForgeApplicationTest {
 
     private static final String[] MODULE_CONFIGURATION_BEANS = {

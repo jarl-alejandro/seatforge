@@ -5,7 +5,8 @@ info:
   summary: Contrato REST mínimo para experimentar con concurrencia y carga.
   description: |
     API educativa del monolito SeatForge. No representa un producto comercial.
-    Los pagos y las identidades son simulados deliberadamente.
+    Los pagos son simulados deliberadamente. Los endpoints protegidos aceptan
+    access tokens JWT emitidos por Auth0 para la audiencia de SeatForge.
 servers:
   - url: http://localhost:8080/api/v1
     description: Entorno local
@@ -270,7 +271,10 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      description: Token opaco local asociado a un usuario de laboratorio.
+      bearerFormat: JWT
+      description: |
+        Access token RS256 emitido por Auth0 para la audiencia de SeatForge.
+        `sub` identifica al actor técnico y `permissions` contiene sus permisos.
 
   parameters:
     EventId:

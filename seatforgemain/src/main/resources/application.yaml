@@ -1,3 +1,10 @@
 spring:
   application:
     name: seatforge
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH0_ISSUER}
+          audiences: ${AUTH0_AUDIENCE}
+          jws-algorithms: RS256
