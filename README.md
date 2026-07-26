@@ -46,7 +46,16 @@ Los comandos se ejecutan desde la raíz del repositorio:
 
 # Construir el único artefacto desplegable
 ./seatforgemain/gradlew -p seatforgemain clean build
+
+# Validar OpenAPI y generar interfaces HTTP y DTOs, sin implementaciones
+./seatforgemain/gradlew -p seatforgemain generateApiContract
 ```
+
+El contrato fuente vive en [`docs/api/openapi.yaml`](docs/api/openapi.yaml). Las
+interfaces y DTOs generados se escriben en `seatforgemain/build/generated/openapi`,
+se compilan como parte del proyecto y no se versionan. El código generado define
+exclusivamente la frontera HTTP; no genera controladores concretos, dominio,
+casos de uso ni persistencia.
 
 La integración continua ejecuta la misma suite mediante
 [GitHub Actions](.github/workflows/ci.yml). Una regla ArchUnit rota debe hacer

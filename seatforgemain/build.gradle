@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.openapi.generator' version '7.23.0'
 }
 
 group = 'com.jarl'
@@ -19,6 +20,7 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -31,4 +33,60 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+def openApiGeneratedDir = layout.buildDirectory.dir('generated/openapi')
+
+openApiValidate {
+	inputSpec.set(layout.projectDirectory.file('../docs/api/openapi.yaml'))
+}
+
+openApiGenerate {
+	generatorName.set('spring')
+	inputSpec.set(layout.projectDirectory.file('../docs/api/openapi.yaml'))
+	outputDir.set(openApiGeneratedDir)
+	apiPackage.set('com.jarl.seatforge.contract.api')
+	modelPackage.set('com.jarl.seatforge.contract.model')
+
+	globalProperties.set([
+		apiDocs   : 'false',
+		apiTests  : 'false',
+		modelDocs : 'false',
+		modelTests: 'false'
+	])
+
+	configOptions.set([
+		additionalNotNullAnnotations: 'true',
+		annotationLibrary           : 'none',
+		documentationProvider       : 'none',
+		hideGenerationTimestamp     : 'true',
+		interfaceOnly               : 'true',
+		openApiNullable             : 'false',
+		requestMappingMode          : 'api_interface',
+		skipDefaultInterface        : 'true',
+		useBeanValidation           : 'true',
+		useJackson3                 : 'true',
+		useSpringBoot4              : 'true',
+		useTags                     : 'true'
+	])
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir(openApiGeneratedDir.map { it.dir('src/main/java') })
+		}
+	}
+}
+
+tasks.named('compileJava') {
+	dependsOn tasks.named('openApiValidate')
+	dependsOn tasks.named('openApiGenerate')
+}
+
+tasks.register('generateApiContract') {
+	group = 'openapi tools'
+	description = 'Valida OpenAPI y genera únicamente interfaces HTTP y DTOs.'
+	dependsOn tasks.named('openApiValidate')
+	dependsOn tasks.named('openApiGenerate')
 }
