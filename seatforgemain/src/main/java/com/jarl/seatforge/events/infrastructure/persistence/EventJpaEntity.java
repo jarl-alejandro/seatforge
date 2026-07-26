@@ -54,4 +54,10 @@ class EventJpaEntity {
         capacity = event.capacity();
         status = event.status();
     }
+
+    com.jarl.seatforge.events.domain.Event toDomain() {
+        return new com.jarl.seatforge.events.domain.Event(
+                id, ownerId, name, startsAt,
+                new com.jarl.seatforge.events.domain.Money(priceAmount, currency), capacity, status);
+    }
 }

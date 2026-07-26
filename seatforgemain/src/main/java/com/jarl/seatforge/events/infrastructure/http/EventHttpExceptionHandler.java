@@ -1,16 +1,20 @@
 package com.jarl.seatforge.events.infrastructure.http;
 
 import com.jarl.seatforge.contract.model.Problem;
+import com.jarl.seatforge.events.application.port.in.EventNotFoundException;
+import com.jarl.seatforge.events.application.port.in.EventPublicationConflictException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@RestControllerAdvice(assignableTypes = EventsHttpAdapter.class)
+@RestControllerAdvice(assignableTypes = {EventsHttpAdapter.class, EventTicketsHttpAdapter.class})
 public class EventHttpExceptionHandler {
 
-    @ExceptionHandler({IllegalArgumentException.class, MethodArgumentNotValidException.class})
+    @ExceptionHandler({IllegalArgumentException.class, MethodArgumentNotValidException.class,
+            ConstraintViolationException.class})
     ResponseEntity<Problem> invalidRequest(Exception exception) {
         String detail = exception instanceof IllegalArgumentException
                 ? exception.getMessage()
@@ -21,5 +25,21 @@ public class EventHttpExceptionHandler {
         return ResponseEntity.badRequest()
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
+    }
+
+    @ExceptionHandler(EventNotFoundException.class)
+    ResponseEntity<Problem> eventNotFound(EventNotFoundException exception) {
+        return problem(404, "Event not found", exception.getMessage(), "EVENT_NOT_FOUND");
+    }
+
+    @ExceptionHandler(EventPublicationConflictException.class)
+    ResponseEntity<Problem> publicationConflict(EventPublicationConflictException exception) {
+        return problem(409, "Event cannot be published", exception.getMessage(), "EVENT_PUBLICATION_CONFLICT");
+    }
+
+    private static ResponseEntity<Problem> problem(int status, String title, String detail, String code) {
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(new Problem("about:blank", title, status).detail(detail).code(code));
     }
 }

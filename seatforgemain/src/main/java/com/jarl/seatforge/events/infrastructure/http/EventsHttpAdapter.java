@@ -6,8 +6,9 @@ import com.jarl.seatforge.contract.model.Event;
 import com.jarl.seatforge.contract.model.EventPage;
 import com.jarl.seatforge.contract.model.Money;
 import com.jarl.seatforge.events.application.port.in.CreateEventUseCase;
+import com.jarl.seatforge.events.application.port.in.BrowseCatalogUseCase;
+import com.jarl.seatforge.events.application.port.in.PublishEventUseCase;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,9 +22,15 @@ import java.util.UUID;
 public class EventsHttpAdapter implements EventsApi {
 
     private final CreateEventUseCase createEventUseCase;
+    private final PublishEventUseCase publishEventUseCase;
+    private final BrowseCatalogUseCase browseCatalogUseCase;
 
-    public EventsHttpAdapter(CreateEventUseCase createEventUseCase) {
+    public EventsHttpAdapter(CreateEventUseCase createEventUseCase,
+                             PublishEventUseCase publishEventUseCase,
+                             BrowseCatalogUseCase browseCatalogUseCase) {
         this.createEventUseCase = createEventUseCase;
+        this.publishEventUseCase = publishEventUseCase;
+        this.browseCatalogUseCase = browseCatalogUseCase;
     }
 
     @Override
@@ -51,16 +58,30 @@ public class EventsHttpAdapter implements EventsApi {
 
     @Override
     public ResponseEntity<Event> getPublishedEvent(UUID eventId) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        return ResponseEntity.ok(toResponse(browseCatalogUseCase.getEvent(eventId)));
     }
 
     @Override
     public ResponseEntity<EventPage> listPublishedEvents(Integer page, Integer size) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var result = browseCatalogUseCase.listEvents(page, size);
+        return ResponseEntity.ok(new EventPage(
+                result.page(), result.size(), result.totalElements(), result.totalPages(),
+                result.items().stream().map(EventsHttpAdapter::toResponse).toList()));
     }
 
     @Override
     public ResponseEntity<Event> publishEvent(UUID eventId) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var event = publishEventUseCase.publish(eventId);
+        return ResponseEntity.ok(new Event(event.eventId(), event.name(),
+                OffsetDateTime.ofInstant(event.startsAt(), ZoneOffset.UTC),
+                new Money(event.price(), Money.CurrencyEnum.fromValue(event.currency())),
+                event.capacity(), Event.StatusEnum.fromValue(event.status())));
+    }
+
+    private static Event toResponse(BrowseCatalogUseCase.CatalogEvent event) {
+        return new Event(event.eventId(), event.name(),
+                OffsetDateTime.ofInstant(event.startsAt(), ZoneOffset.UTC),
+                new Money(event.price(), Money.CurrencyEnum.fromValue(event.currency())),
+                event.capacity(), Event.StatusEnum.fromValue(event.status()));
     }
 }

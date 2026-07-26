@@ -51,4 +51,18 @@ public record Event(
         }
         return new Event(id, ownerId, name, startsAt, price, capacity, EventStatus.DRAFT);
     }
+
+    public Event publish(boolean hasAvailableInventory, Clock clock) {
+        Objects.requireNonNull(clock, "clock must not be null");
+        if (status == EventStatus.PUBLISHED) {
+            return this;
+        }
+        if (!startsAt.isAfter(clock.instant())) {
+            throw new IllegalStateException("only future events can be published");
+        }
+        if (!hasAvailableInventory) {
+            throw new IllegalStateException("event inventory must contain available tickets");
+        }
+        return new Event(id, ownerId, name, startsAt, price, capacity, EventStatus.PUBLISHED);
+    }
 }

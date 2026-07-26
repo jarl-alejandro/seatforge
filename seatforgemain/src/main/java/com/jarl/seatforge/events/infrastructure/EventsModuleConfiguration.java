@@ -1,11 +1,16 @@
 package com.jarl.seatforge.events.infrastructure;
 
 import com.jarl.seatforge.events.application.port.in.CreateEventUseCase;
+import com.jarl.seatforge.events.application.port.in.BrowseCatalogUseCase;
+import com.jarl.seatforge.events.application.port.in.PublishEventUseCase;
 import com.jarl.seatforge.events.application.port.out.EventIdGenerator;
 import com.jarl.seatforge.events.application.port.out.EventStore;
 import com.jarl.seatforge.events.application.usecase.CreateEventHandler;
+import com.jarl.seatforge.events.application.usecase.BrowseCatalogHandler;
+import com.jarl.seatforge.events.application.usecase.PublishEventHandler;
 import com.jarl.seatforge.identity.application.port.in.CurrentActor;
 import com.jarl.seatforge.inventory.application.port.in.CreateEventInventory;
+import com.jarl.seatforge.inventory.application.port.in.QueryEventInventory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -29,5 +34,18 @@ public class EventsModuleConfiguration {
     ) {
         return new CreateEventHandler(
                 currentActor, eventStore, eventIdGenerator, createEventInventory, seatForgeClock);
+    }
+
+    @Bean
+    PublishEventUseCase publishEventUseCase(CurrentActor currentActor, EventStore eventStore,
+                                            QueryEventInventory inventory, Clock seatForgeClock) {
+        return new PublishEventHandler(currentActor, eventStore, inventory, seatForgeClock);
+    }
+
+    @Bean
+    BrowseCatalogUseCase browseCatalogUseCase(EventStore eventStore,
+                                              QueryEventInventory inventory,
+                                              Clock seatForgeClock) {
+        return new BrowseCatalogHandler(eventStore, inventory, seatForgeClock);
     }
 }

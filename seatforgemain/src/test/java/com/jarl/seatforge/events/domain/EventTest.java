@@ -58,6 +58,40 @@ class EventTest {
                 .hasMessage("price must have at most two decimal places");
     }
 
+    @Test
+    void publishes_a_future_draft_with_available_inventory() {
+        Event published = draft(NOW.plusSeconds(60), 1, new BigDecimal("1.00"))
+                .publish(true, CLOCK);
+
+        assertThat(published.status()).isEqualTo(EventStatus.PUBLISHED);
+    }
+
+    @Test
+    void publishing_an_already_published_event_is_idempotent() {
+        Event published = draft(NOW.plusSeconds(60), 1, new BigDecimal("1.00"))
+                .publish(true, CLOCK);
+
+        assertThat(published.publish(false, CLOCK)).isSameAs(published);
+    }
+
+    @Test
+    void rejects_publication_without_available_inventory() {
+        assertThatThrownBy(() -> draft(NOW.plusSeconds(60), 1, new BigDecimal("1.00"))
+                .publish(false, CLOCK))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("event inventory must contain available tickets");
+    }
+
+    @Test
+    void rejects_publication_when_the_event_is_no_longer_in_the_future() {
+        Event draft = new Event(UUID.randomUUID(), "organizer@clients", "Concert", NOW,
+                new Money(new BigDecimal("1.00"), "USD"), 1, EventStatus.DRAFT);
+
+        assertThatThrownBy(() -> draft.publish(true, CLOCK))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("only future events can be published");
+    }
+
     private static Event draft(Instant startsAt, int capacity, BigDecimal amount) {
         return Event.draft(
                 UUID.randomUUID(), "organizer@clients", "Concert", startsAt,
