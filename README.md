@@ -31,6 +31,7 @@ y el [ADR del monolito modular](docs/adr/ADR-001-monolito-modular-hexagonal.md).
 ## Requisitos
 
 - JDK 25.
+- Docker con Docker Compose para PostgreSQL local y pruebas de integración.
 - No es necesario instalar Gradle: el repositorio incluye Gradle Wrapper.
 
 ## Ejecutar localmente
@@ -38,6 +39,12 @@ y el [ADR del monolito modular](docs/adr/ADR-001-monolito-modular-hexagonal.md).
 Los comandos se ejecutan desde la raíz del repositorio:
 
 ```bash
+# Construir e iniciar PostgreSQL; crea la base y el usuario configurados
+docker compose up -d --build postgres
+
+# Consultar el estado del contenedor
+docker compose ps postgres
+
 # Ejecutar toda la suite, incluidas las pruebas de arquitectura
 ./seatforgemain/gradlew -p seatforgemain test
 
@@ -51,11 +58,31 @@ Los comandos se ejecutan desde la raíz del repositorio:
 ./seatforgemain/gradlew -p seatforgemain generateApiContract
 ```
 
+El contenedor usa por defecto la base, usuario y contraseña `seatforge`. Copia
+`.env.example` a `.env` para cambiar esos valores. La imagen oficial registra el
+usuario y crea la base indicada durante la primera inicialización del volumen.
+Flyway aplica las migraciones al arrancar la aplicación y Hibernate solo valida
+el esquema resultante. Las migraciones usan el formato obligatorio
+`V###__descripcion_en_snake_case.sql`.
+
+Para reiniciar la base desde cero en desarrollo local:
+
+```bash
+docker compose down -v
+docker compose up -d --build postgres
+```
+
 El contrato fuente vive en [`docs/api/openapi.yaml`](docs/api/openapi.yaml). Las
 interfaces y DTOs generados se escriben en `seatforgemain/build/generated/openapi`,
 se compilan como parte del proyecto y no se versionan. El código generado define
 exclusivamente la frontera HTTP; no genera controladores concretos, dominio,
 casos de uso ni persistencia.
+
+Para pruebas manuales puede importarse directamente en Postman la colección
+[`docs/postman/SeatForge.postman_collection.json`](docs/postman/SeatForge.postman_collection.json).
+Configura en sus variables los Client ID/Secret M2M de Auth0; la colección obtiene
+y conserva temporalmente los tokens de organizador y comprador, y encadena los
+identificadores creados entre las peticiones.
 
 La integración continua ejecuta la misma suite mediante
 [GitHub Actions](.github/workflows/ci.yml). Una regla ArchUnit rota debe hacer

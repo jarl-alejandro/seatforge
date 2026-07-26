@@ -1,0 +1,19 @@
+services:
+  postgres:
+    build:
+      context: ./seatforgemain/docker/postgres
+      dockerfile: Dockerfile
+    container_name: seatforge-postgres
+    environment:
+      POSTGRES_DB: ${SEATFORGE_DATABASE_NAME:-seatforge}
+      POSTGRES_USER: ${SEATFORGE_DATABASE_USERNAME:-seatforge}
+      POSTGRES_PASSWORD: ${SEATFORGE_DATABASE_PASSWORD:-seatforge}
+    ports:
+      - "${SEATFORGE_DATABASE_PORT:-5432}:5432"
+    volumes:
+      - seatforge-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  seatforge-postgres-data:
+    name: seatforge-postgres-data

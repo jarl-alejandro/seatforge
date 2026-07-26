@@ -1,6 +1,5 @@
 package com.jarl.seatforge.identity.infrastructure.security;
 
-import com.jarl.seatforge.identity.application.port.in.CurrentActor;
 import jakarta.servlet.DispatcherType;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
@@ -61,8 +60,4 @@ public class IdentitySecurityConfiguration {
         return http.build();
     }
 
-    @Bean
-    CurrentActor currentActor() {
-        return new SpringSecurityCurrentActor();
-    }
 }

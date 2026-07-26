@@ -12,7 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-final class SpringSecurityCurrentActor implements CurrentActor {
+public final class SpringSecurityCurrentActor implements CurrentActor {
 
     @Override
     public AuthenticatedActor get() {

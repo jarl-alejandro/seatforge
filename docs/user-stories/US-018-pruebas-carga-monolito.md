@@ -1,4 +1,4 @@
-# US-018 — Medir carga del monolito
+b  # US-018 — Medir carga del monolito
 
 **Estado:** NÚCLEO EXPERIMENTAL
 

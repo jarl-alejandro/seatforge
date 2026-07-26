@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: 4bf4bd1c-1399-4479-8030-7ad31c19362e
+
+localResources:
+  collections:
+    - ../SeatForge.postman_collection.json

@@ -3,13 +3,16 @@ package com.jarl.seatforge.identity.infrastructure.security;
 import com.jarl.seatforge.identity.application.port.in.AuthenticatedActor;
 import com.jarl.seatforge.identity.application.port.in.ActorId;
 import com.jarl.seatforge.identity.application.port.in.CurrentActor;
+import com.jarl.seatforge.identity.infrastructure.IdentityModuleConfiguration;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -54,12 +57,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = {
+@WebMvcTest(controllers = Auth0SecurityIntegrationTest.SecurityProbeController.class, properties = {
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://seatforge-test.auth0.com/",
         "spring.security.oauth2.resourceserver.jwt.audiences=https://api.seatforge.local"
 })
-@AutoConfigureMockMvc
+@ImportAutoConfiguration({SecurityAutoConfiguration.class, ServletWebSecurityAutoConfiguration.class})
 @Import({
+        IdentityModuleConfiguration.class,
         Auth0SecurityIntegrationTest.SecurityProbeController.class,
         Auth0SecurityIntegrationTest.OfflineJwtConfiguration.class
 })
