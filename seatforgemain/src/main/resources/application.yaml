@@ -30,3 +30,12 @@ spring:
           issuer-uri: ${AUTH0_ISSUER}
           audiences: ${AUTH0_AUDIENCE}
           jws-algorithms: RS256
+
+seatforge:
+  inventory:
+    reservation-ttl: ${SEATFORGE_RESERVATION_TTL:PT10M}
+    expiration:
+      enabled: ${SEATFORGE_EXPIRATION_ENABLED:true}
+      batch-size: ${SEATFORGE_EXPIRATION_BATCH_SIZE:100}
+      fixed-delay: ${SEATFORGE_EXPIRATION_FIXED_DELAY:PT30S}
+      initial-delay: ${SEATFORGE_EXPIRATION_INITIAL_DELAY:PT30S}

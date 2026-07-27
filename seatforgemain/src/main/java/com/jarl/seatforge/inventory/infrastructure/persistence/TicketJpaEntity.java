@@ -9,6 +9,9 @@ import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import com.jarl.seatforge.inventory.domain.Ticket;
+import com.jarl.seatforge.inventory.domain.TicketStatus;
+
 @Entity
 @Table(name = "tickets", uniqueConstraints = @UniqueConstraint(
         name = "uk_tickets_event_number", columnNames = {"event_id", "ticket_number"}))
@@ -33,6 +36,9 @@ class TicketJpaEntity {
     @Column(nullable = false, length = 3)
     String currency;
 
+    @Column(name = "event_published", nullable = false)
+    boolean eventPublished;
+
     protected TicketJpaEntity() {
     }
 
@@ -43,5 +49,17 @@ class TicketJpaEntity {
         this.status = "AVAILABLE";
         this.priceAmount = priceAmount;
         this.currency = currency;
+        this.eventPublished = false;
+    }
+
+    Ticket toDomain() {
+        return new Ticket(id, eventId, TicketStatus.valueOf(status), eventPublished);
+    }
+
+    void apply(Ticket ticket) {
+        if (!id.equals(ticket.id())) {
+            throw new IllegalArgumentException("cannot apply another ticket");
+        }
+        status = ticket.status().name();
     }
 }

@@ -62,4 +62,14 @@ public class JpaTicketStoreAdapter implements TicketStore {
         int totalPages = total == 0 ? 0 : (int) ((total + size - 1) / size);
         return new TicketPage(items, total, totalPages);
     }
+
+    @Override
+    public void markEventPublished(UUID eventId) {
+        entityManager.createQuery("""
+                        update TicketJpaEntity t set t.eventPublished = true
+                        where t.eventId = :eventId
+                        """)
+                .setParameter("eventId", eventId)
+                .executeUpdate();
+    }
 }

@@ -11,6 +11,7 @@ import com.jarl.seatforge.events.application.usecase.PublishEventHandler;
 import com.jarl.seatforge.identity.application.port.in.CurrentActor;
 import com.jarl.seatforge.inventory.application.port.in.CreateEventInventory;
 import com.jarl.seatforge.inventory.application.port.in.QueryEventInventory;
+import com.jarl.seatforge.inventory.application.port.in.PublishEventInventory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -38,8 +39,10 @@ public class EventsModuleConfiguration {
 
     @Bean
     PublishEventUseCase publishEventUseCase(CurrentActor currentActor, EventStore eventStore,
-                                            QueryEventInventory inventory, Clock seatForgeClock) {
-        return new PublishEventHandler(currentActor, eventStore, inventory, seatForgeClock);
+                                            QueryEventInventory inventory, Clock seatForgeClock,
+                                            PublishEventInventory publishEventInventory) {
+        return new PublishEventHandler(currentActor, eventStore, inventory, seatForgeClock,
+                publishEventInventory);
     }
 
     @Bean

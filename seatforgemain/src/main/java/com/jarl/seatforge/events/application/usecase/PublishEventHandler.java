@@ -8,6 +8,7 @@ import com.jarl.seatforge.events.domain.Event;
 import com.jarl.seatforge.identity.application.port.in.ActorAccessDeniedException;
 import com.jarl.seatforge.identity.application.port.in.CurrentActor;
 import com.jarl.seatforge.inventory.application.port.in.QueryEventInventory;
+import com.jarl.seatforge.inventory.application.port.in.PublishEventInventory;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -18,13 +19,16 @@ public class PublishEventHandler implements PublishEventUseCase {
     private final EventStore eventStore;
     private final QueryEventInventory inventory;
     private final Clock clock;
+    private final PublishEventInventory publishEventInventory;
 
     public PublishEventHandler(CurrentActor currentActor, EventStore eventStore,
-                               QueryEventInventory inventory, Clock clock) {
+                               QueryEventInventory inventory, Clock clock,
+                               PublishEventInventory publishEventInventory) {
         this.currentActor = currentActor;
         this.eventStore = eventStore;
         this.inventory = inventory;
         this.clock = clock;
+        this.publishEventInventory = publishEventInventory;
     }
 
     @Override
@@ -43,6 +47,7 @@ public class PublishEventHandler implements PublishEventUseCase {
         }
         if (published != event) {
             eventStore.save(published);
+            publishEventInventory.markPublished(eventId);
         }
         return toResult(published);
     }

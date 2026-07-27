@@ -8,3 +8,8 @@ spring:
       ddl-auto: create-drop
   flyway:
     enabled: false
+
+seatforge:
+  inventory:
+    expiration:
+      enabled: false

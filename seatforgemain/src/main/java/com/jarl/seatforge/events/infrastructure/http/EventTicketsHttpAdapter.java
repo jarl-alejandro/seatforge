@@ -6,20 +6,26 @@ import com.jarl.seatforge.contract.model.Reservation;
 import com.jarl.seatforge.contract.model.Ticket;
 import com.jarl.seatforge.contract.model.TicketPage;
 import com.jarl.seatforge.events.application.port.in.BrowseCatalogUseCase;
+import com.jarl.seatforge.inventory.application.port.in.ReserveTicketUseCase;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import java.net.URI;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @RestController
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class EventTicketsHttpAdapter implements InventoryApi {
     private final BrowseCatalogUseCase catalog;
+    private final ReserveTicketUseCase reservations;
 
-    public EventTicketsHttpAdapter(BrowseCatalogUseCase catalog) {
+    public EventTicketsHttpAdapter(BrowseCatalogUseCase catalog,
+                                   ReserveTicketUseCase reservations) {
         this.catalog = catalog;
+        this.reservations = reservations;
     }
 
     @Override
@@ -35,6 +41,12 @@ public class EventTicketsHttpAdapter implements InventoryApi {
 
     @Override
     public ResponseEntity<Reservation> reserveTicket(UUID ticketId, UUID idempotencyKey) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var reserved = reservations.reserve(ticketId, idempotencyKey);
+        var body = new Reservation(reserved.reservationId(), reserved.ticketId(),
+                Reservation.StatusEnum.fromValue(reserved.status()),
+                OffsetDateTime.ofInstant(reserved.expiresAt(), ZoneOffset.UTC));
+        return ResponseEntity.created(URI.create(
+                "/api/v1/tickets/" + ticketId + "/reservations/" + reserved.reservationId()))
+                .body(body);
     }
 }

@@ -11,6 +11,8 @@ public interface TicketStore {
 
     TicketPage findByEventId(UUID eventId, int page, int size);
 
+    void markEventPublished(UUID eventId);
+
     record StoredTicket(UUID ticketId, UUID eventId, int number, String status,
                         BigDecimal price, String currency) {
     }

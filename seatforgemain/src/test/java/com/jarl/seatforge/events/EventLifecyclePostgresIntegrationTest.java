@@ -106,6 +106,10 @@ class EventLifecyclePostgresIntegrationTest {
         UUID draft = create("Draft", FIRST_START.plusSeconds(60), 1);
         publishEvents.publish(second);
         publishEvents.publish(first);
+        assertThat(jdbc.queryForObject("""
+                select count(*) from tickets
+                where event_id in (?, ?) and event_published = true
+                """, Integer.class, first, second)).isEqualTo(5);
         insertPastPublishedEvent();
 
         var firstPage = catalog.listEvents(0, 1);
