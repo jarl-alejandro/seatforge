@@ -32,6 +32,8 @@ spring:
           jws-algorithms: RS256
 
 seatforge:
+  payments:
+    max-delay-ms: ${SEATFORGE_PAYMENT_MAX_DELAY_MS:30000}
   inventory:
     reservation-ttl: ${SEATFORGE_RESERVATION_TTL:PT10M}
     expiration:
